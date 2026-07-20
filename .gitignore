@@ -1,0 +1,44 @@
+# =========================================
+#  Maven & Build
+# =========================================
+target/
+*.jar
+*.war
+*.ear
+
+# =========================================
+#  Logs & Temp files
+# =========================================
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# =========================================
+#  IDE Specific
+# =========================================
+# Eclipse
+.classpath
+.project
+.settings/
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+# VSCode
+.vscode/
+
+# =========================================
+#  OS Specific
+# =========================================
+.DS_Store
+Thumbs.db
+
+# =========================================
+#  Environment / Secrets
+# =========================================
+.env
+application-local.yml
+application-local.properties
+/.metadata/

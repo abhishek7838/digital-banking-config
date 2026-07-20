@@ -1,0 +1,278 @@
+      retries: 30
+
+  mysql-user:
+    image: mysql:8.0
+    container_name: mysql-user
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: user_db_banking
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_user_data:/var/lib/mysql
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  mysql-account:
+    image: mysql:8.0
+    container_name: mysql-account
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: account_db_banking
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_account_data:/var/lib/mysql
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  mysql-transaction:
+    image: mysql:8.0
+    container_name: mysql-transaction
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: transaction_db_banking
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_transaction_data:/var/lib/mysql
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  mysql-payment:
+    image: mysql:8.0
+    container_name: mysql-payment
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: payment_db_banking
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql_payment_data:/var/lib/mysql
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  mysql-notification:
+    image: mysql:8.0
+    container_name: mysql-notification
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: notification_db_banking
+    ports:
+      - "3311:3306"
+    volumes:
+      - mysql_notification_data:/var/lib/mysql
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  mysql-reporting:
+    image: mysql:8.0
+    container_name: mysql-reporting
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_DATABASE: reporting_db_banking
+    ports:
+      - "3312:3306"
+    volumes:
+      - mysql_reporting_data:/var/lib/mysql
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  # -------------------------
+  # MICROSERVICES
+  # -------------------------
+  auth-service:
+    image: banking-auth-service:latest
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-auth:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  user-service:
+    image: banking-user-service:latest
+    container_name: user-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-user:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  account-service:
+    image: banking-account-service:latest
+    container_name: account-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-account:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  transaction-service:
+    image: banking-transaction-service:latest
+    container_name: transaction-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-transaction:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  payment-service:
+    image: banking-payment-service:latest
+    container_name: payment-service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-payment:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  notification-service:
+    image: banking-notification-service:latest
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-notification:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - banking-network
+
+  reporting-service:
+    image: banking-reporting-service:latest
+    container_name: reporting-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    env_file:
+      - ./.env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "optional:configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      mysql-reporting:
+        condition: service_healthy
+    networks:
+      - banking-network

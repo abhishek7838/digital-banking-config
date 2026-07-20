@@ -1,0 +1,4 @@
+# Do not commit secrets
+*.secret
+*.env
+application-local.yml

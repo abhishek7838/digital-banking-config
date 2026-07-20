@@ -1,0 +1,239 @@
+name: digital-banking
+
+networks:
+  banking-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+
+x-common: &common
+  pull_policy: never
+  restart: unless-stopped
+  mem_limit: 640m
+  env_file:
+    - ./.env
+  networks:
+    - banking-network
+  depends_on:
+    config-server:
+      condition: service_healthy
+    eureka-server:
+      condition: service_healthy
+
+x-env: &env
+  JAVA_OPTS: "-XX:MaxRAMPercentage=70"
+  SPRING_PROFILES_ACTIVE: docker
+  SPRING_CONFIG_IMPORT: "configserver:${CONFIG_SERVER_URL}"
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL}
+  SECURITY_JWT_SECRET: ${SECURITY_JWT_SECRET}
+  DB_HOST: ${RDS_HOSTNAME}
+  DB_USER: ${RDS_USERNAME}
+  DB_PASSWORD: ${RDS_PASSWORD}
+
+services:
+  config-server:
+    build: ./config-server
+    image: banking-config-server:latest
+    container_name: config-server
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 512m
+    ports:
+      - "8888:8888"
+    env_file:
+      - ./.env
+    networks:
+      - banking-network
+    environment:
+      JAVA_OPTS: "-XX:MaxRAMPercentage=70"
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: ${CONFIG_REPO_URL}
+      SPRING_CLOUD_CONFIG_SERVER_GIT_SEARCH_PATHS: ${CONFIG_SEARCH_PATHS}
+      SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL: main
+      EUREKA_CLIENT_ENABLED: "false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  eureka-server:
+    build: ./eureka-server
+    image: banking-eureka-server:latest
+    container_name: eureka-server
+    pull_policy: never
+    restart: unless-stopped
+    mem_limit: 512m
+    ports:
+      - "8761:8761"
+    env_file:
+      - ./.env
+    networks:
+      - banking-network
+    environment:
+      JAVA_OPTS: "-XX:MaxRAMPercentage=70"
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_CONFIG_IMPORT: "configserver:${CONFIG_SERVER_URL}"
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    mem_limit: 256m
+    ports:
+      - "6379:6379"
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    mem_limit: 512m
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  gateway:
+    <<: *common
+    build: ./gateway
+    image: banking-gateway:latest
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *env
+      LOCAL_FRONTEND_URL: ${LOCAL_FRONTEND_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  auth-service:
+    <<: *common
+    build: ./services/auth-service
+    image: banking-auth-service:latest
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *env
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  user-service:
+    <<: *common
+    build: ./services/user-service
+    image: banking-user-service:latest
+    container_name: user-service
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *env
+
+  account-service:
+    <<: *common
+    build: ./services/account-service
+    image: banking-account-service:latest
+    container_name: account-service
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *env
+
+  transaction-service:
+    <<: *common
+    build: ./services/transaction-service
+    image: banking-transaction-service:latest
+    container_name: transaction-service
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *env
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    <<: *common
+    build: ./services/notification-service
+    image: banking-notification-service:latest
+    container_name: notification-service
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *env
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  reporting-service:
+    <<: *common
+    build: ./services/reporting-service
+    image: banking-reporting-service:latest
+    container_name: reporting-service
+    ports:
+      - "8086:8086"
+    environment:
+      <<: *env
+
+  payment-service:
+    <<: *common
+    build: ./services/payment-service
+    image: banking-payment-service:latest
+    container_name: payment-service
+    ports:
+      - "8087:8087"
+    environment:
+      <<: *env
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy

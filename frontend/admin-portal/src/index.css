@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global banking styles */
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  ::selection {
+    @apply bg-banking-accent text-slate-950;
+  }
+}
+
+/* Reusable banking card */
+@layer components {
+  .banking-card {
+    @apply rounded-2xl bg-banking-card border border-slate-800/60 shadow-banking p-5;
+  }
+
+  .banking-badge {
+    @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply banking-badge bg-green-500/10 text-green-400 border border-green-500/30;
+  }
+
+  .badge-danger {
+    @apply banking-badge bg-red-500/10 text-red-400 border border-red-500/30;
+  }
+
+  .badge-warning {
+    @apply banking-badge bg-amber-500/10 text-amber-300 border border-amber-500/30;
+  }
+
+  .banking-input {
+    @apply w-full rounded-lg bg-slate-950/60 border border-slate-800 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-banking-accent focus:border-banking-accent placeholder:text-slate-500;
+  }
+
+  .banking-button-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-banking-accent px-4 py-2 text-sm font-medium text-slate-950 hover:bg-banking-accentSoft transition;
+  }
+
+  .banking-button-ghost {
+    @apply inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 transition;
+  }
+}
