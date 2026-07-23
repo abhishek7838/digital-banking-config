@@ -63,7 +63,7 @@ spring:
             allowedOrigins:
               - "http://localhost:5173"
               - "http://localhost:5174"
-              - "${LOCAL_FRONTEND_URL:http://localhost:3000}"
+              - "https://d35s4e60gyjrz9.cloudfront.net"              - "${LOCAL_FRONTEND_URL:http://localhost:3000}"
               - "https://digital-banking-main.vercel.app"
               - "https://digital-banking-admin.vercel.app"
             allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
