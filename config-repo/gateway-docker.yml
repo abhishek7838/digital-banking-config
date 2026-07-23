@@ -52,7 +52,8 @@ spring:
             allowedOrigins:
               - "http://localhost:5173"
               - "http://localhost:5174"
-              - "https://d35s4e60gyjrz9.cloudfront.net"              - "https://digital-banking-main.vercel.app"
+              - "https://d35s4e60gyjrz9.cloudfront.net"
+              - "https://digital-banking-main.vercel.app"
               - "https://digital-banking-admin.vercel.app"
               - "http://13.201.72.249"
               - "http://13.201.72.249:81"
